@@ -472,7 +472,7 @@
             const pos = getPosition(e);
             floodFill(pos.x, pos.y, color);
             const data = { type: "fill", x: pos.x, y: pos.y, color: color };
-            localHistory.push(data); // Sin límites
+            localHistory.push(data);
             socket.emit("fill", data);
         }
     });
@@ -515,7 +515,7 @@
             size: strokeSize
         };
         
-        localHistory.push(data = drawData); // Sin límites
+        localHistory.push(drawData);
 
         pendingDraws.push(drawData);
         if (!isBatchScheduled) {
@@ -598,18 +598,18 @@
 
     socket.on("drawBatch", batch => {
         batch.forEach(data => {
-            localHistory.push(data); // Sin límites
+            localHistory.push(data);
             drawLine(data.fromX, data.fromY, data.toX, data.toY, data.color, data.size);
         });
     });
 
     socket.on("draw", data => {
-        localHistory.push(data); // Sin límites
+        localHistory.push(data);
         drawLine(data.fromX, data.fromY, data.toX, data.toY, data.color, data.size);
     });
 
     socket.on("fill", data => {
-        localHistory.push(data); // Sin límites
+        localHistory.push(data);
         floodFill(data.x, data.y, data.color);
     });
 
@@ -638,7 +638,7 @@
             usersDisplay.textContent = `🟢 ${users.join(", ")} están aquí ❤️`;
         }
     });
-</script>    
+</script>   
 
 </body>
 
