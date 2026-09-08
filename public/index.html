@@ -95,6 +95,7 @@
     </div>
 
     <div class="canvas-container" id="canvasContainer">
+        <!-- Canvas con resolución fija interna de 800x500 -->
         <canvas id="whiteboard" width="800" height="500"></canvas>
     </div>
 
@@ -116,11 +117,11 @@
         let lastY = 0;
         let currentTool = 'pen'; // 'pen' o 'eraser'
 
-        // Pedir nombre al entrar
+        // Pedir nombre de usuario al entrar
         let userName = prompt("¿Cómo te llamas?") || "Anónimo";
         socket.emit('setName', userName);
 
-        // Control de herramientas
+        // Control de selección de herramientas
         btnPen.addEventListener('click', () => {
             currentTool = 'pen';
             btnPen.classList.add('active');
@@ -133,10 +134,9 @@
             btnPen.classList.remove('active');
         });
 
-        // Obtener coordenadas relativas precisas dentro del canvas
-        function getMousePos(e) {
+        // Obtener coordenadas exactas dentro del plano del canvas de 800x500
+        function getCanvasCoordinates(e) {
             const rect = canvas.getBoundingClientRect();
-            // Esto asegura que sin importar el tamaño visual, pinte exacto en los 800x500 del canvas
             return {
                 x: (e.clientX - rect.left) * (canvas.width / rect.width),
                 y: (e.clientY - rect.top) * (canvas.height / rect.height)
@@ -145,16 +145,16 @@
 
         canvas.addEventListener('mousedown', (e) => {
             isDrawing = true;
-            const pos = getMousePos(e);
+            const pos = getCanvasCoordinates(e);
             lastX = pos.x;
             lastY = pos.y;
         });
 
         canvas.addEventListener('mousemove', (e) => {
-            const pos = getMousePos(e);
-
-            // Transmitir movimiento del cursor en porcentajes (para adaptarlo a cualquier pantalla)
+            const pos = getCanvasCoordinates(e);
             const rect = canvas.getBoundingClientRect();
+
+            // Enviar posición relativa del cursor a los demás usuarios
             socket.emit('cursorMove', {
                 xPercent: (e.clientX - rect.left) / rect.width,
                 yPercent: (e.clientY - rect.top) / rect.height,
@@ -167,10 +167,10 @@
             const color = currentTool === 'eraser' ? '#FFFFFF' : colorPicker.value;
             const size = currentTool === 'eraser' ? Number(sizePicker.value) * 3 : Number(sizePicker.value);
 
-            // 1. Dibujar localmente de inmediato
+            // 1. Dibujar de forma local e inmediata en nuestra propia pantalla
             drawLine(lastX, lastY, pos.x, pos.y, color, size);
 
-            // 2. Enviar trazo al servidor para que la otra persona lo reciba
+            // 2. Transmitir el trazo al servidor para que la otra persona lo pinte al instante
             socket.emit('draw', {
                 x0: lastX,
                 y0: lastY,
@@ -188,7 +188,7 @@
             isDrawing = false;
         });
 
-        // Función centralizada para dibujar líneas limpias y suaves
+        // Función encargada de renderizar la línea de manera suave
         function drawLine(x0, y0, x1, y1, color, size) {
             ctx.beginPath();
             ctx.moveTo(x0, y0);
@@ -201,21 +201,21 @@
             ctx.closePath();
         }
 
-        // --- ESCUCHAR AL SERVIDOR ---
+        // --- ESCUCHAS DE SOCKET.IO (TIEMPO REAL) ---
 
-        // Cargar historial anterior al conectarse
+        // Recibir historial completo al entrar por primera vez
         socket.on('initHistory', (history) => {
             history.forEach(data => {
                 drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
             });
         });
 
-        // RECIBIR TRAZOS DE OTROS USUARIOS (¡Aquí estaba el fallo de sincronización!)
+        // Recibir los trazos dibujados por la otra persona
         socket.on('draw', (data) => {
             drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
         });
 
-        // Botón limpiar
+        // Botón para limpiar toda la pizarra
         btnClear.addEventListener('click', () => {
             socket.emit('clear');
         });
@@ -224,7 +224,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         });
 
-        // Manejo de cursores de otros usuarios y Kuromi exclusiva del borrador
+        // Mostrar cursores de otros usuarios y la imagen de Kuromi solo cuando activen el borrador
         socket.on('cursorMove', (data) => {
             let cursorEl = document.getElementById(`cursor-${data.id}`);
             if (!cursorEl) {
