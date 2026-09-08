@@ -1,5 +1,5 @@
 const express = require('express');
-const http = http = require('http');
+const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
@@ -7,6 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Servir archivos estáticos desde la carpeta public
 app.use(express.static(path.join(__dirname, 'public')));
 
 let drawingHistory = [];
@@ -26,7 +27,7 @@ io.on('connection', (socket) => {
     // Lotes de trazos sin límite de memoria
     socket.on('drawBatch', (batch) => {
         batch.forEach(data => {
-            drawingHistory.push(data); // Sin shift(), guarda todo infinitamente
+            drawingHistory.push(data);
         });
         socket.broadcast.emit('drawBatch', batch);
     });
