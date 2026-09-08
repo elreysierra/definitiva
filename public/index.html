@@ -95,7 +95,6 @@
     </div>
 
     <div class="canvas-container" id="canvasContainer">
-        <!-- Canvas con resolución fija interna de 800x500 -->
         <canvas id="whiteboard" width="800" height="500"></canvas>
     </div>
 
@@ -115,13 +114,13 @@
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
-        let currentTool = 'pen'; // 'pen' o 'eraser'
+        let currentTool = 'pen';
 
         // Pedir nombre de usuario al entrar
         let userName = prompt("¿Cómo te llamas?") || "Anónimo";
         socket.emit('setName', userName);
 
-        // Control de selección de herramientas
+        // Control de herramientas
         btnPen.addEventListener('click', () => {
             currentTool = 'pen';
             btnPen.classList.add('active');
@@ -134,7 +133,7 @@
             btnPen.classList.remove('active');
         });
 
-        // Obtener coordenadas exactas dentro del plano del canvas de 800x500
+        // Obtener coordenadas exactas en el canvas
         function getCanvasCoordinates(e) {
             const rect = canvas.getBoundingClientRect();
             return {
@@ -154,7 +153,7 @@
             const pos = getCanvasCoordinates(e);
             const rect = canvas.getBoundingClientRect();
 
-            // Enviar posición relativa del cursor a los demás usuarios
+            // Enviar posición del cursor y si está usando borrador (Kuromi)
             socket.emit('cursorMove', {
                 xPercent: (e.clientX - rect.left) / rect.width,
                 yPercent: (e.clientY - rect.top) / rect.height,
@@ -167,10 +166,10 @@
             const color = currentTool === 'eraser' ? '#FFFFFF' : colorPicker.value;
             const size = currentTool === 'eraser' ? Number(sizePicker.value) * 3 : Number(sizePicker.value);
 
-            // 1. Dibujar de forma local e inmediata en nuestra propia pantalla
+            // Dibujar localmente
             drawLine(lastX, lastY, pos.x, pos.y, color, size);
 
-            // 2. Transmitir el trazo al servidor para que la otra persona lo pinte al instante
+            // Enviar trazo al servidor
             socket.emit('draw', {
                 x0: lastX,
                 y0: lastY,
@@ -188,7 +187,6 @@
             isDrawing = false;
         });
 
-        // Función encargada de renderizar la línea de manera suave
         function drawLine(x0, y0, x1, y1, color, size) {
             ctx.beginPath();
             ctx.moveTo(x0, y0);
@@ -201,21 +199,21 @@
             ctx.closePath();
         }
 
-        // --- ESCUCHAS DE SOCKET.IO (TIEMPO REAL) ---
+        // --- ESCUCHAS DE SOCKET.IO ---
 
-        // Recibir historial completo al entrar por primera vez
+        // 1. Cargar historial cuando te conectas (¡Esto faltaba configurar bien!)
         socket.on('initHistory', (history) => {
             history.forEach(data => {
                 drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
             });
         });
 
-        // Recibir los trazos dibujados por la otra persona
+        // 2. Recibir trazos en tiempo real de la otra persona
         socket.on('draw', (data) => {
             drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
         });
 
-        // Botón para limpiar toda la pizarra
+        // 3. Limpiar pizarra
         btnClear.addEventListener('click', () => {
             socket.emit('clear');
         });
@@ -224,7 +222,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         });
 
-        // Mostrar cursores de otros usuarios y la imagen de Kuromi solo cuando activen el borrador
+        // 4. Movimiento de cursores y Kuromi exclusiva del borrador
         socket.on('cursorMove', (data) => {
             let cursorEl = document.getElementById(`cursor-${data.id}`);
             if (!cursorEl) {
