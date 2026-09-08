@@ -354,6 +354,9 @@
     let currentTool = "pencil";
     let localHistory = [];
 
+    let pendingDraws = [];
+    let isBatchScheduled = false;
+
     currentColor.style.background = color;
 
     themeToggle.addEventListener("click", () => {
@@ -387,8 +390,8 @@
     function getPosition(event) {
         const rect = canvas.getBoundingClientRect();
         return {
-            x: (event.clientX - rect.left) * (canvas.width / rect.width),
-            y: (event.clientY - rect.top) * (canvas.height / rect.height)
+            x: Math.floor((event.clientX - rect.left) * (canvas.width / rect.width)),
+            y: Math.floor((event.clientY - rect.top) * (canvas.height / rect.height))
         };
     }
 
@@ -469,8 +472,7 @@
             const pos = getPosition(e);
             floodFill(pos.x, pos.y, color);
             const data = { type: "fill", x: pos.x, y: pos.y, color: color };
-            localHistory.push(data);
-            if (localHistory.length > 5000) localHistory.shift();
+            localHistory.push(data); // Sin límites
             socket.emit("fill", data);
         }
     });
@@ -501,7 +503,6 @@
         const strokeColor = (currentTool === "eraser") ? "#ffffff" : color;
         const strokeSize = (currentTool === "eraser") ? Math.max(brushSize * 3, 15) : brushSize;
 
-        // Dibuja inmediatamente de forma local con curvas suaves
         drawLine(lastX, lastY, pos.x, pos.y, strokeColor, strokeSize);
         
         const drawData = {
@@ -514,11 +515,19 @@
             size: strokeSize
         };
         
-        localHistory.push(drawData);
-        if (localHistory.length > 5000) localHistory.shift();
+        localHistory.push(data = drawData); // Sin límites
 
-        // Enviar el trazo inmediatamente al servidor sin retardos raros
-        socket.emit("draw", drawData);
+        pendingDraws.push(drawData);
+        if (!isBatchScheduled) {
+            isBatchScheduled = true;
+            requestAnimationFrame(() => {
+                if (pendingDraws.length > 0) {
+                    socket.emit("drawBatch", pendingDraws);
+                    pendingDraws = [];
+                }
+                isBatchScheduled = false;
+            });
+        }
 
         lastX = pos.x;
         lastY = pos.y;
@@ -563,10 +572,10 @@
             targetColor[2] === fillColor[2] &&
             targetColor[3] === fillColor[3]) return;
 
-        const socketStack = [[startX, startY]];
+        const stack = [[startX, startY]];
 
-        while (socketStack.length > 0) {
-            const [x, y] = socketStack.pop();
+        while (stack.length > 0) {
+            const [x, y] = stack.pop();
             const pos = (y * canvas.width + x) * 4;
 
             if (x >= 0 && x < canvas.width && y >= 0 && y < canvas.height) {
@@ -580,22 +589,27 @@
                     data[pos + 2] = fillColor[2];
                     data[pos + 3] = fillColor[3];
 
-                    socketStack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+                    stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
                 }
             }
         }
         ctx.putImageData(imgData, 0, 0);
     }
 
+    socket.on("drawBatch", batch => {
+        batch.forEach(data => {
+            localHistory.push(data); // Sin límites
+            drawLine(data.fromX, data.fromY, data.toX, data.toY, data.color, data.size);
+        });
+    });
+
     socket.on("draw", data => {
-        localHistory.push(data);
-        if (localHistory.length > 5000) localHistory.shift();
+        localHistory.push(data); // Sin límites
         drawLine(data.fromX, data.fromY, data.toX, data.toY, data.color, data.size);
     });
 
     socket.on("fill", data => {
-        localHistory.push(data);
-        if (localHistory.length > 5000) localHistory.shift();
+        localHistory.push(data); // Sin límites
         floodFill(data.x, data.y, data.color);
     });
 
@@ -624,7 +638,8 @@
             usersDisplay.textContent = `🟢 ${users.join(", ")} están aquí ❤️`;
         }
     });
-</script>
+</script>    
+
 </body>
 
 </html>
