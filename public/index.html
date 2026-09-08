@@ -1,686 +1,264 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hola tamo yetsa ❤️</title>
-
+    <title>Pizarra Colaborativa ❤️</title>
     <style>
         * {
             box-sizing: border-box;
-        }
-
-        body {
             margin: 0;
-            min-height: 100vh;
-            background: #fceef3;
-            font-family: Arial, sans-serif;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fce4ec;
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: background 0.3s ease, color 0.3s ease;
-            overflow-x: hidden;
-        }
-
-        #nameScreen {
-            position: fixed;
-            inset: 0;
-            width: 100%;
-            height: 100dvh;
-            background: url('miamor.jpeg') no-repeat center center / cover;
-            display: flex;
             justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        h1 {
+            color: #d81b60;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+        .toolbar {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
             align-items: center;
+            margin-bottom: 15px;
+            z-index: 10;
+        }
+        .toolbar button, .toolbar input, .toolbar select {
+            padding: 8px 12px;
+            border: 2px solid #f8bbd0;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            color: #ad1457;
+            outline: none;
+            transition: 0.2s;
+        }
+        .toolbar button:hover, .toolbar button.active {
+            background: #f8bbd0;
+            color: #880e4f;
+        }
+        .canvas-container {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+        /* Estilo para los cursores flotantes de otros usuarios y Kuromi */
+        .remote-cursor {
+            position: absolute;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: transform 0.05s linear;
             z-index: 100;
         }
-
-        .nameBox {
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            padding: 30px 20px;
-            border-radius: 24px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            width: 85%;
-            max-width: 360px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .nameBox h2 {
-            color: #d6336c;
-            margin: 0 0 10px 0;
-        }
-
-        .nameBox p {
-            margin-top: 0;
-            color: #444;
-        }
-
-        #nameInput {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            font-size: 16px;
-            margin-bottom: 12px;
-            outline: none;
-        }
-
-        #enterButton {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 20px;
-            background: #d6336c;
+        .user-tag {
+            font-size: 10px;
+            background: rgba(216, 27, 96, 0.8);
             color: white;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        #app {
-            display: none;
-            width: 100%;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        h1 {
-            color: #d6336c;
-            margin: 20px 0 5px;
-        }
-
-        .subtitle {
-            color: #777;
-            margin-bottom: 10px;
-        }
-
-        #users {
-            margin-bottom: 15px;
-            color: #555;
-            font-size: 14px;
-        }
-
-        .toolbar {
-            width: 90vw;
-            max-width: 1000px;
-            background: white;
-            padding: 12px 16px;
-            border-radius: 15px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-            margin-bottom: 15px;
-        }
-
-        .toolbar span {
-            font-weight: bold;
-            color: #555;
-            font-size: 14px;
-        }
-
-        .color-palette {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            align-items: center;
-        }
-
-        .color {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: 2px solid #ddd;
-            cursor: pointer;
-            transition: transform 0.1s ease;
-        }
-
-        .color:hover {
-            transform: scale(1.15);
-        }
-
-        .color-picker {
-            width: 30px;
-            height: 30px;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            padding: 0;
-            background: none;
-        }
-
-        .color-picker::-webkit-color-swatch-wrapper {
-            padding: 0;
-        }
-
-        .color-picker::-webkit-color-swatch {
-            border: 2px solid #ddd;
-            border-radius: 50%;
-        }
-
-        .tool-button {
-            border: none;
-            padding: 8px 13px;
-            border-radius: 10px;
-            background: #f3f3f3;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        #size {
-            width: 90px;
-            cursor: pointer;
-        }
-
-        #canvas {
-            background: white;
-            border: 3px solid #d6336c;
-            border-radius: 15px;
-            width: 90vw;
-            max-width: 1000px;
-            height: auto;
-            aspect-ratio: 1000 / 600;
-            cursor: crosshair;
-            touch-action: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        }
-
-        #clear {
-            margin: 15px 0 25px;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 20px;
-            background: #d6336c;
-            color: white;
-            cursor: pointer;
-            font-size: 15px;
-        }
-
-        #currentColor {
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            border: 2px solid #555;
-        }
-
-        body.dark-mode {
-            background: #181825;
-            color: #cdd6f4;
-        }
-
-        body.dark-mode .nameBox {
-            background: rgba(24, 24, 37, 0.88);
-        }
-
-        body.dark-mode .toolbar {
-            background: #1e1e2e;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4);
-        }
-
-        body.dark-mode h1,
-        body.dark-mode .nameBox h2 {
-            color: #f5c2e7;
-        }
-
-        body.dark-mode .subtitle,
-        body.dark-mode #users,
-        body.dark-mode .toolbar span,
-        body.dark-mode .nameBox p {
-            color: #a6adc8;
-        }
-
-        body.dark-mode .tool-button {
-            background: #313244;
-            color: #cdd6f4;
-        }
-
-        body.dark-mode #nameInput {
-            background: #181825;
-            color: #cdd6f4;
-            border-color: #45475a;
-        }
-
-        #kuromiCursor {
-            position: fixed;
-            pointer-events: none;
-            display: none;
-            z-index: 1000;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-        }
-
-        #remoteKuromi {
-            position: fixed;
-            pointer-events: none;
-            display: none;
-            z-index: 999;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
+            padding: 2px 5px;
+            border-radius: 4px;
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
         }
     </style>
 </head>
-
 <body>
 
-<img id="kuromiCursor" src="./kuromi.png" alt="Kuromi Cursor">
-<img id="remoteKuromi" src="./kuromi.png" alt="Remote Kuromi">
-
-<div id="nameScreen">
-    <div class="nameBox">
-        <h2>Hola tamo yetsa ❤️</h2>
-        <p>¿Quién está entrando?</p>
-        <input id="nameInput" type="text" placeholder="Escribe tu nombre" maxlength="20">
-        <button id="enterButton">Entrar ❤️</button>
-    </div>
-</div>
-
-<div id="app">
-    <h1>Hola tamo yetsa ❤️</h1>
-    <div class="subtitle">Dibujen juntos ✨</div>
-    <div id="users">🟢 Conectando...</div>
+    <h1>Pizarra Colaborativa ❤️</h1>
 
     <div class="toolbar">
-        <span>🎨 Paleta:</span>
-        <div class="color-palette">
-            <button class="color" style="background:#000000" data-color="#000000" title="Negro"></button>
-            <button class="color" style="background:#6c757d" data-color="#6c757d" title="Gris"></button>
-            <button class="color" style="background:#ffffff" data-color="#ffffff" title="Blanco"></button>
-            <button class="color" style="background:#e63946" data-color="#e63946" title="Rojo"></button>
-            <button class="color" style="background:#ff69b4" data-color="#ff69b4" title="Rosado"></button>
-            <button class="color" style="background:#ffb6c1" data-color="#ffb6c1" title="Rosado Pastel"></button>
-            <button class="color" style="background:#ff7b00" data-color="#ff7b00" title="Naranja"></button>
-            <button class="color" style="background:#ffd700" data-color="#ffd700" title="Amarillo"></button>
-            <button class="color" style="background:#ffea00" data-color="#ffea00" title="Amarillo Claro"></button>
-            <button class="color" style="background:#00a651" data-color="#00a651" title="Verde"></button>
-            <button class="color" style="background:#2ec4b6" data-color="#2ec4b6" title="Turquesa"></button>
-            <button class="color" style="background:#00b4d8" data-color="#00b4d8" title="Celeste"></button>
-            <button class="color" style="background:#0066ff" data-color="#0066ff" title="Azul"></button>
-            <button class="color" style="background:#8000ff" data-color="#8000ff" title="Púrpura"></button>
-            <button class="color" style="background:#f72585" data-color="#f72585" title="Magenta"></button>
-            <button class="color" style="background:#7f4f24" data-color="#7f4f24" title="Marrón"></button>
-        </div>
-
-        <span>Más:</span>
-        <input type="color" id="customColor" class="color-picker" value="#000000" title="Elegir otro color">
-
-        <span>Actual:</span>
-        <div id="currentColor"></div>
-
-        <span>🖌️ Tamaño:</span>
-        <input type="range" id="size" min="1" max="40" value="5">
-        <span id="sizeValue">5</span>
-
-        <button class="tool-button" id="pencil">✏️ Lápiz</button>
-        <button class="tool-button" id="eraser">🖤 Kuromi Borrador</button>
-        <button class="tool-button" id="bucket">🪣 Balde</button>
-        <button class="tool-button" id="themeToggle" title="Cambiar tema">🌙</button>
+        <label>Color: <input type="color" id="colorPicker" value="#000000"></label>
+        <label>Grosor: <input type="range" id="brushSize" min="1" max="50" value="5"></label>
+        <button id="btnPen" class="active">Lápiz</button>
+        <button id="btnEraser">Borrador (Kuromi)</button>
+        <button id="btnClear">Limpiar Todo</button>
     </div>
 
-    <canvas id="canvas" width="1000" height="600"></canvas>
+    <div class="canvas-container" id="canvasContainer">
+        <canvas id="whiteboard"></canvas>
+    </div>
 
-    <button id="clear">🗑️ Limpiar lienzo</button>
-</div>
+    <!-- Cargar Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io(); // Se conecta automáticamente al servidor actual (Render o Local)
 
-<script src="/socket.io/socket.io.js"></script>
+        const canvas = document.getElementById('whiteboard');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const sizePicker = document.getElementById('brushSize');
+        const btnPen = document.getElementById('btnPen');
+        const btnEraser = document.getElementById('btnEraser');
+        const btnClear = document.getElementById('btnClear');
+        const canvasContainer = document.getElementById('canvasContainer');
 
-<script>
-    const socket = io();
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    const nameScreen = document.getElementById("nameScreen");
-    const app = document.getElementById("app");
-    const nameInput = document.getElementById("nameInput");
-    const enterButton = document.getElementById("enterButton");
-    const usersDisplay = document.getElementById("users");
-    const sizeInput = document.getElementById("size");
-    const sizeValue = document.getElementById("sizeValue");
-    const currentColor = document.getElementById("currentColor");
-    const customColor = document.getElementById("customColor");
-    const themeToggle = document.getElementById("themeToggle");
-    const kuromiCursor = document.getElementById("kuromiCursor");
-    const remoteKuromi = document.getElementById("remoteKuromi");
+        // Ajustar tamaño del canvas
+        canvas.width = 800;
+        canvas.height = 500;
 
-    let drawing = false;
-    let color = "#000000";
-    let brushSize = 5;
-    let lastX = 0;
-    let lastY = 0;
-    let currentTool = "pencil";
-    let localHistory = [];
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentTool = 'pen'; // 'pen' o 'eraser'
 
-    let lastSendTime = 0;
-    const throttleInterval = 30;
+        // Pedir nombre de usuario al entrar
+        let userName = prompt("¿Cómo te llamas?") || "Anónimo";
+        socket.emit('setName', userName);
 
-    currentColor.style.background = color;
+        // Cambiar herramientas
+        btnPen.addEventListener('click', () => {
+            currentTool = 'pen';
+            btnPen.classList.add('active');
+            btnEraser.classList.remove('active');
+            canvas.style.cursor = 'crosshair';
+        });
 
-    themeToggle.addEventListener("click", () => {
-        document.body.classList.toggle("dark-mode");
-        const isDark = document.body.classList.contains("dark-mode");
-        themeToggle.textContent = isDark ? "☀️" : "🌙";
-    });
+        btnEraser.addEventListener('click', () => {
+            currentTool = 'eraser';
+            btnEraser.classList.add('active');
+            btnPen.classList.remove('active');
+            canvas.style.cursor = 'url("kuromi.png") 16 16, auto'; // Muestra a Kuromi como cursor propio si está en la carpeta public
+        });
 
-    enterButton.addEventListener("click", enter);
-    nameInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") enter();
-    });
+        // Eventos del Mouse para Dibujar
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            lastX = e.clientX - rect.left;
+            lastY = e.clientY - rect.top;
+        });
 
-    function enter() {
-        const name = nameInput.value.trim();
-        if (!name) {
-            alert("Escribe tu nombre ❤️");
-            return;
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+
+            // Enviar posición del cursor a los demás (con indicador si usa borrador)
+            socket.emit('cursorMove', {
+                xPercent: currentX / canvas.width,
+                yPercent: currentY / canvas.height,
+                isEraser: (currentTool === 'eraser'),
+                name: userName
+            });
+
+            if (!isDrawing) return;
+
+            const color = currentTool === 'eraser' ? '#FFFFFF' : colorPicker.value;
+            const size = currentTool === 'eraser' ? brushSize.value * 3 : sizePicker.value;
+
+            // Dibujar localmente al instante
+            drawLine(lastX, lastY, currentX, currentY, color, size);
+
+            // Enviar trazo al servidor para que aparezca rápido en los demás
+            socket.emit('draw', {
+                x0: lastX,
+                y0: lastY,
+                x1: currentX,
+                y1: currentY,
+                color: color,
+                size: size
+            });
+
+            lastX = currentX;
+            lastY = currentY;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        // Función para pintar líneas en el canvas
+        function drawLine(x0, y0, x1, y1, color, size) {
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.lineTo(x1, y1);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = size;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            ctx.closePath();
         }
-        
-        if ("Notification" in window && Notification.permission !== "granted") {
-            Notification.requestPermission();
-        }
 
-        socket.emit("setName", name);
-        nameScreen.style.display = "none";
-        app.style.display = "flex";
-        redrawAll();
-    }
+        // --- ESCUCHAR EVENTOS DEL SERVIDOR ---
 
-    function getPosition(event) {
-        const rect = canvas.getBoundingClientRect();
-        return {
-            x: Math.floor((event.clientX - rect.left) * (canvas.width / rect.width)),
-            y: Math.floor((event.clientY - rect.top) * (canvas.height / rect.height))
-        };
-    }
+        // Recibir historial al conectarse
+        socket.emit('initHistory', []);
+        socket.on('initHistory', (history) => {
+            history.forEach(data => {
+                drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
+            });
+        });
 
-    function redrawAll() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        localHistory.forEach(data => {
-            if (data.type === "fill") {
-                floodFill(data.x, data.y, data.color);
+        // Recibir trazos de otros usuarios en tiempo real
+        socket.on('draw', (data) => {
+            drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
+        });
+
+        // Limpiar pizarra
+        btnClear.addEventListener('click', () => {
+            socket.emit('clear');
+        });
+
+        socket.on('clear', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // Movimiento de cursores de otros usuarios y aparición de Kuromi
+        socket.on('cursorMove', (data) => {
+            let cursorEl = document.getElementById(`cursor-${data.id}`);
+            if (!cursorEl) {
+                cursorEl = document.createElement('div');
+                cursorEl.id = `cursor-${data.id}`;
+                cursorEl.className = 'remote-cursor';
+                document.body.appendChild(cursorEl);
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            cursorEl.style.left = `${rect.left + (data.xPercent * canvas.width)}px`;
+            cursorEl.style.top = `${rect.top + (data.yPercent * canvas.height)}px`;
+
+            // Si el otro usuario usa el borrador, se muestra la imagen de Kuromi. Si no, un puntito rojo con su nombre.
+            if (data.isEraser) {
+                cursorEl.innerHTML = `
+                    <div class="user-tag">${data.name} (Borrador)</div>
+                    <img src="kuromi.png" width="35" style="pointer-events: none;" />
+                `;
             } else {
-                drawLine(data.fromX, data.fromY, data.toX, data.toY, data.color, data.size);
+                cursorEl.innerHTML = `
+                    <div class="user-tag">${data.name}</div>
+                    <div style="width: 8px; height: 8px; background: #ff4081; border-radius: 50%;"></div>
+                `;
             }
         });
-    }
 
-    document.querySelectorAll(".color").forEach(button => {
-        button.addEventListener("click", () => {
-            color = button.dataset.color;
-            currentColor.style.background = color;
-            customColor.value = color;
-            if (currentTool === "eraser") {
-                currentTool = "pencil";
-                socket.emit("cursorMove", { visible: false });
-            }
-            canvas.style.cursor = "crosshair";
-            kuromiCursor.style.display = "none";
+        // Eliminar cursor cuando alguien se desconecta
+        socket.on('removeCursor', (id) => {
+            const cursorEl = document.getElementById(`cursor-${id}`);
+            if (cursorEl) cursorEl.remove();
         });
-    });
-
-    customColor.addEventListener("input", (e) => {
-        color = e.target.value;
-        currentColor.style.background = color;
-        if (currentTool === "eraser") {
-            currentTool = "pencil";
-            socket.emit("cursorMove", { visible: false });
-        }
-        canvas.style.cursor = "crosshair";
-        kuromiCursor.style.display = "none";
-    });
-
-    sizeInput.addEventListener("input", () => {
-        brushSize = Number(sizeInput.value);
-        sizeValue.textContent = brushSize;
-        
-        if (currentTool === "eraser") {
-            const dynamicSize = Math.max(brushSize * 3, 20);
-            kuromiCursor.style.width = `${dynamicSize}px`;
-            kuromiCursor.style.height = `${dynamicSize}px`;
-        }
-    });
-
-    document.getElementById("eraser").addEventListener("click", () => {
-        currentTool = "eraser";
-        currentColor.style.background = "#ffffff";
-        canvas.style.cursor = "none";
-        
-        const dynamicSize = Math.max(brushSize * 3, 20);
-        kuromiCursor.style.width = `${dynamicSize}px`;
-        kuromiCursor.style.height = `${dynamicSize}px`;
-        kuromiCursor.style.display = "block";
-    });
-
-    document.getElementById("pencil").addEventListener("click", () => {
-        color = customColor.value;
-        currentColor.style.background = color;
-        currentTool = "pencil";
-        canvas.style.cursor = "crosshair";
-        kuromiCursor.style.display = "none";
-        socket.emit("cursorMove", { visible: false });
-    });
-
-    document.getElementById("bucket").addEventListener("click", () => {
-        currentTool = "bucket";
-        canvas.style.cursor = "default";
-        kuromiCursor.style.display = "none";
-        socket.emit("cursorMove", { visible: false });
-    });
-
-    window.addEventListener("pointermove", (event) => {
-        if (currentTool === "eraser") {
-            const dynamicSize = Math.max(brushSize * 3, 20);
-            kuromiCursor.style.left = `${event.clientX}px`;
-            kuromiCursor.style.top = `${event.clientY}px`;
-
-            const now = Date.now();
-            if (now - lastSendTime > throttleInterval) {
-                lastSendTime = now;
-                socket.emit("cursorMove", {
-                    xPercent: event.clientX / window.innerWidth,
-                    yPercent: event.clientY / window.innerHeight,
-                    size: dynamicSize,
-                    visible: true
-                });
-            }
-        }
-    });
-
-    document.addEventListener("mouseleave", () => {
-        kuromiCursor.style.display = "none";
-        if (currentTool === "eraser") {
-            socket.emit("cursorMove", { visible: false });
-        }
-    });
-
-    canvas.addEventListener("pointerenter", () => {
-        if (currentTool === "eraser") {
-            kuromiCursor.style.display = "block";
-        }
-    });
-
-    canvas.addEventListener("click", (e) => {
-        if (currentTool === "bucket") {
-            const pos = getPosition(e);
-            floodFill(pos.x, pos.y, color);
-            const data = { type: "fill", x: pos.x, y: pos.y, color: color };
-            
-            localHistory.push(data);
-            if (localHistory.length > 5000) {
-                localHistory.shift();
-            }
-            socket.emit("fill", data);
-        }
-    });
-
-    canvas.addEventListener("pointerdown", event => {
-        if (currentTool === "bucket") return;
-        event.preventDefault();
-        drawing = true;
-        const pos = getPosition(event);
-        lastX = pos.x;
-        lastY = pos.y;
-    });
-
-    canvas.addEventListener("pointermove", event => {
-        if (!drawing || currentTool === "bucket") return;
-        event.preventDefault();
-        const pos = getPosition(event);
-
-        const strokeColor = (currentTool === "eraser") ? "#ffffff" : color;
-        const strokeSize = (currentTool === "eraser") ? Math.max(brushSize * 3, 15) : brushSize;
-
-        drawLine(lastX, lastY, pos.x, pos.y, strokeColor, strokeSize);
-        
-        const drawData = {
-            type: "draw",
-            fromX: lastX,
-            fromY: lastY,
-            toX: pos.x,
-            toY: pos.y,
-            color: strokeColor,
-            size: strokeSize
-        };
-        
-        localHistory.push(drawData);
-        if (localHistory.length > 5000) {
-            localHistory.shift();
-        }
-        socket.emit("draw", drawData);
-
-        lastX = pos.x;
-        lastY = pos.y;
-    });
-
-    canvas.addEventListener("pointerup", () => drawing = false);
-    canvas.addEventListener("pointerleave", () => {
-        drawing = false;
-        kuromiCursor.style.display = "none";
-    });
-
-    function drawLine(fromX, fromY, toX, toY, color, size) {
-        ctx.beginPath();
-        ctx.moveTo(fromX, fromY);
-        ctx.lineTo(toX, toY);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = size;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.stroke();
-        ctx.closePath();
-    }
-
-    function floodFill(startX, startY, hexColor) {
-        startX = Math.floor(startX);
-        startY = Math.floor(startY);
-        if (startX < 0 || startX >= canvas.width || startY < 0 || startY >= canvas.height) return;
-
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-
-        const r = parseInt(hexColor.slice(1, 3), 16);
-        const g = parseInt(hexColor.slice(3, 5), 16);
-        const b = parseInt(hexColor.slice(5, 7), 16);
-        const fillColor = [r, g, b, 255];
-
-        const startPos = (startY * canvas.width + startX) * 4;
-        const targetColor = [data[startPos], data[startPos + 1], data[startPos + 2], data[startPos + 3]];
-
-        if (targetColor[0] === fillColor[0] &&
-            targetColor[1] === fillColor[1] &&
-            targetColor[2] === fillColor[2] &&
-            targetColor[3] === fillColor[3]) return;
-
-        const stack = [[startX, startY]];
-
-        while (stack.length > 0) {
-            const [x, y] = stack.pop();
-            const pos = (y * canvas.width + x) * 4;
-
-            if (x >= 0 && x < canvas.width && y >= 0 && y < canvas.height) {
-                if (data[pos] === targetColor[0] &&
-                    data[pos + 1] === targetColor[1] &&
-                    data[pos + 2] === targetColor[2] &&
-                    data[pos + 3] === targetColor[3]) {
-
-                    data[pos] = fillColor[0];
-                    data[pos + 1] = fillColor[1];
-                    data[pos + 2] = fillColor[2];
-                    data[pos + 3] = fillColor[3];
-
-                    stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
-                }
-            }
-        }
-        ctx.putImageData(imgData, 0, 0);
-    }
-
-    socket.on("draw", data => {
-        localHistory.push(data);
-        if (localHistory.length > 5000) {
-            localHistory.shift();
-        }
-        drawLine(data.fromX, data.fromY, data.toX, data.toY, data.color, data.size);
-    });
-
-    socket.on("fill", data => {
-        localHistory.push(data);
-        if (localHistory.length > 5000) {
-            localHistory.shift();
-        }
-        floodFill(data.x, data.y, data.color);
-    });
-
-    socket.on("cursorMove", (data) => {
-        if (data.visible) {
-            const calculatedX = data.xPercent * window.innerWidth;
-            const calculatedY = data.yPercent * window.innerHeight;
-
-            remoteKuromi.style.display = "block";
-            remoteKuromi.style.left = `${calculatedX}px`;
-            remoteKuromi.style.top = `${calculatedY}px`;
-            remoteKuromi.style.width = `${data.size}px`;
-            remoteKuromi.style.height = `${data.size}px`;
-        } else {
-            remoteKuromi.style.display = "none";
-        }
-    });
-
-    socket.on("removeCursor", () => {
-        remoteKuromi.style.display = "none";
-    });
-
-    socket.on("initHistory", history => {
-        localHistory = history;
-        redrawAll();
-    });
-
-    document.getElementById("clear").addEventListener("click", () => {
-        socket.emit("clear");
-    });
-
-    socket.on("clear", () => {
-        localHistory = [];
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    });
-
-    socket.on("users", users => {
-        if (users.length === 0) {
-            usersDisplay.textContent = "🔴 Nadie conectado";
-        } else if (users.length === 1) {
-            usersDisplay.textContent = `🟢 ${users[0]} está aquí ❤️`;
-        } else if (users.length === 2) {
-            usersDisplay.textContent = `🟢 ${users[0]} y ${users[1]} están aquí ❤️`;
-        } else {
-            usersDisplay.textContent = `🟢 ${users.join(", ")} están aquí ❤️`;
-        }
-    });
-</script>
-
+    </script>
 </body>
-
 </html>
