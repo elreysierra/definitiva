@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Servir archivos estáticos desde la carpeta public
+// Servir archivos estáticos de la carpeta public
 app.use(express.static(path.join(__dirname, 'public')));
 
 let drawingHistory = [];
@@ -24,7 +24,7 @@ io.on('connection', (socket) => {
         updateUserList();
     });
 
-    // Lotes de trazos sin límite de memoria
+    // Recibir lotes de trazos y guardarlos sin límite de memoria
     socket.on('drawBatch', (batch) => {
         batch.forEach(data => {
             drawingHistory.push(data);
@@ -47,21 +47,10 @@ io.on('connection', (socket) => {
         io.emit('clear');
     });
 
-    socket.on('cursorMove', (data) => {
-        socket.broadcast.emit('cursorMove', {
-            id: socket.id,
-            xPercent: data.xPercent,
-            yPercent: data.yPercent,
-            isEraser: data.isEraser,
-            name: data.name
-        });
-    });
-
     socket.on('disconnect', () => {
         console.log(`Usuario desconectado: ${socket.id}`);
         delete users[socket.id];
         updateUserList();
-        io.emit('removeCursor', socket.id);
     });
 });
 
