@@ -1,5 +1,5 @@
 const express = require('express');
-const http = require('http');
+const http = http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
@@ -7,7 +7,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Servir archivos estáticos desde la carpeta public
 app.use(express.static(path.join(__dirname, 'public')));
 
 let drawingHistory = [];
@@ -16,7 +15,7 @@ let users = {};
 io.on('connection', (socket) => {
     console.log(`Usuario conectado: ${socket.id}`);
 
-    // Enviar historial al usuario recién conectado
+    // Enviar todo el historial sin restricciones
     socket.emit('initHistory', drawingHistory);
 
     socket.on('setName', (name) => {
@@ -24,31 +23,20 @@ io.on('connection', (socket) => {
         updateUserList();
     });
 
-    // Manejo de trazos en lote (Batching para eliminar el lag y acelerar la red)
+    // Lotes de trazos sin límite de memoria
     socket.on('drawBatch', (batch) => {
         batch.forEach(data => {
-            if (drawingHistory.length > 5000) {
-                drawingHistory.shift();
-            }
-            drawingHistory.push(data);
+            drawingHistory.push(data); // Sin shift(), guarda todo infinitamente
         });
         socket.broadcast.emit('drawBatch', batch);
     });
 
-    // Manejo de trazos individuales (por compatibilidad)
     socket.on('draw', (data) => {
-        if (drawingHistory.length > 5000) {
-            drawingHistory.shift();
-        }
         drawingHistory.push(data);
         socket.broadcast.emit('draw', data);
     });
 
-    // Manejo del bote de pintura (relleno)
     socket.on('fill', (data) => {
-        if (drawingHistory.length > 5000) {
-            drawingHistory.shift();
-        }
         drawingHistory.push(data);
         socket.broadcast.emit('fill', data);
     });
@@ -58,7 +46,6 @@ io.on('connection', (socket) => {
         io.emit('clear');
     });
 
-    // Movimiento de cursor y lógica de Kuromi para el borrador
     socket.on('cursorMove', (data) => {
         socket.broadcast.emit('cursorMove', {
             id: socket.id,
