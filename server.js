@@ -16,6 +16,7 @@ let users = {};
 io.on('connection', (socket) => {
     console.log(`Usuario conectado: ${socket.id}`);
 
+    // Enviar historial al usuario recién conectado
     socket.emit('initHistory', drawingHistory);
 
     socket.on('setName', (name) => {
@@ -23,11 +24,13 @@ io.on('connection', (socket) => {
         updateUserList();
     });
 
+    // Manejo de trazos de dibujo
     socket.on('draw', (data) => {
         if (drawingHistory.length > 5000) {
             drawingHistory.shift();
         }
         drawingHistory.push(data);
+        // Enviar inmediatamente a los demás sin retrasos
         socket.broadcast.emit('draw', data);
     });
 
@@ -44,13 +47,15 @@ io.on('connection', (socket) => {
         io.emit('clear');
     });
 
+    // Movimiento de cursor y lógica de Kuromi para el borrador
     socket.on('cursorMove', (data) => {
         socket.broadcast.emit('cursorMove', {
             id: socket.id,
             xPercent: data.xPercent,
             yPercent: data.yPercent,
             size: data.size,
-            visible: data.visible
+            visible: data.visible,
+            isEraser: data.isEraser // Envía si está usando el borrador para mostrar a Kuromi
         });
     });
 
