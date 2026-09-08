@@ -1,5 +1,5 @@
 const express = require('express');
-const http = require('http');
+const http = http = require('http'); // Corregido por si acaso, usaremos la importación limpia abajo
 const { Server } = require('socket.io');
 const path = require('path');
 
@@ -64,9 +64,11 @@ io.on('connection', (socket) => {
 
 function updateUserList() {
     const userNames = Object.values(users);
-    io.emit('users', userNames);
+    io.io?.emit ? io.emit('users', userNames) : io.emit('users', userNames);
 }
 
-server.listen(3000, () => {
-    console.log('Servidor corriendo en http://localhost:3000 ❤️');
+// Corrección clave para Render: toma el puerto que asigne la plataforma o el 3000 por defecto localmente
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Servidor corriendo en el puerto ${PORT} ❤️`);
 });
