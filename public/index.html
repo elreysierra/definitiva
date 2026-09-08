@@ -209,7 +209,6 @@
             border: 2px solid #555;
         }
 
-        /* --- MODO OSCURO --- */
         body.dark-mode {
             background: #181825;
             color: #cdd6f4;
@@ -247,7 +246,6 @@
             border-color: #45475a;
         }
 
-        /* Avatar flotante propio */
         #kuromiCursor {
             position: fixed;
             pointer-events: none;
@@ -258,7 +256,6 @@
             height: 40px;
         }
 
-        /* Avatar flotante del otro usuario */
         #remoteKuromi {
             position: fixed;
             pointer-events: none;
@@ -359,7 +356,6 @@
     let currentTool = "pencil";
     let localHistory = [];
 
-    // Variables para controlar la frecuencia de envío y evitar el lag en el celular
     let lastSendTime = 0;
     const throttleInterval = 30;
 
@@ -475,7 +471,6 @@
         socket.emit("cursorMove", { visible: false });
     });
 
-    // Enviar movimiento optimizado para evitar lag en el celular
     window.addEventListener("pointermove", (event) => {
         if (currentTool === "eraser") {
             const dynamicSize = Math.max(brushSize * 3, 20);
@@ -513,7 +508,11 @@
             const pos = getPosition(e);
             floodFill(pos.x, pos.y, color);
             const data = { type: "fill", x: pos.x, y: pos.y, color: color };
+            
             localHistory.push(data);
+            if (localHistory.length > 5000) {
+                localHistory.shift();
+            }
             socket.emit("fill", data);
         }
     });
@@ -546,7 +545,11 @@
             color: strokeColor,
             size: strokeSize
         };
+        
         localHistory.push(drawData);
+        if (localHistory.length > 5000) {
+            localHistory.shift();
+        }
         socket.emit("draw", drawData);
 
         lastX = pos.x;
@@ -618,11 +621,17 @@
 
     socket.on("draw", data => {
         localHistory.push(data);
+        if (localHistory.length > 5000) {
+            localHistory.shift();
+        }
         drawLine(data.fromX, data.fromY, data.toX, data.toY, data.color, data.size);
     });
 
     socket.on("fill", data => {
         localHistory.push(data);
+        if (localHistory.length > 5000) {
+            localHistory.shift();
+        }
         floodFill(data.x, data.y, data.color);
     });
 
