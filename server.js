@@ -1,15 +1,16 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 // Servir archivos estáticos desde la carpeta 'public'
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Historial del lienzo compartido
+// Historial del lienzo compartido (sin límites)
 let drawingHistory = [];
 // Lista de usuarios conectados
 let users = {};
@@ -28,12 +29,19 @@ io.on('connection', (socket) => {
         io.emit('users', Object.values(users));
     });
 
-    // Recibir trazos de lápiz y borrador (ambos viajan por 'draw') y reenviarlos
+    // Recibir lotes de trazos (optimizado para evitar lag a distancia)
+    socket.on('drawBatch', (batch) => {
+        batch.forEach(data => {
+            drawingHistory.push(data);
+        });
+        socket.broadcast.emit('drawBatch', batch);
+    });
+
+    // Recibir trazos individuales por compatibilidad
     socket.on('draw', (data) => {
         drawingHistory.push(data);
         socket.broadcast.emit('draw', data);
         
-        // Avisar a los demás que este usuario está dibujando
         if (users[socket.id]) {
             socket.broadcast.emit('userDrawing', users[socket.id]);
         }
@@ -65,5 +73,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`Servidor corriendo en el puerto ${PORT} ❤️`);
 });
