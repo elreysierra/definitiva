@@ -36,7 +36,7 @@
             margin-bottom: 15px;
             z-index: 10;
         }
-        .toolbar button, .toolbar input, .toolbar select {
+        .toolbar button, .toolbar input {
             padding: 8px 12px;
             border: 2px solid #f8bbd0;
             border-radius: 8px;
@@ -66,17 +66,16 @@
             position: absolute;
             pointer-events: none;
             transform: translate(-50%, -50%);
-            transition: transform 0.05s linear;
             z-index: 100;
         }
         .user-tag {
             font-size: 10px;
-            background: rgba(216, 27, 96, 0.8);
+            background: rgba(216, 27, 96, 0.9);
             color: white;
-            padding: 2px 5px;
+            padding: 2px 6px;
             border-radius: 4px;
             position: absolute;
-            top: -18px;
+            top: -20px;
             left: 50%;
             transform: translateX(-50%);
             white-space: nowrap;
@@ -96,7 +95,7 @@
     </div>
 
     <div class="canvas-container" id="canvasContainer">
-        <canvas id="whiteboard"></canvas>
+        <canvas id="whiteboard" width="800" height="500"></canvas>
     </div>
 
     <!-- Cargar Socket.io -->
@@ -112,51 +111,53 @@
         const btnEraser = document.getElementById('btnEraser');
         const btnClear = document.getElementById('btnClear');
 
-        // Ajustar tamaño del canvas
-        canvas.width = 800;
-        canvas.height = 500;
-
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
-        let currentTool = 'pen';
+        let currentTool = 'pen'; // 'pen' o 'eraser'
 
-        // Pedir nombre de usuario al entrar
+        // Pedir nombre al entrar
         let userName = prompt("¿Cómo te llamas?") || "Anónimo";
         socket.emit('setName', userName);
 
-        // Cambiar herramientas
+        // Control de herramientas
         btnPen.addEventListener('click', () => {
             currentTool = 'pen';
             btnPen.classList.add('active');
             btnEraser.classList.remove('active');
-            canvas.style.cursor = 'crosshair';
         });
 
         btnEraser.addEventListener('click', () => {
             currentTool = 'eraser';
             btnEraser.classList.add('active');
             btnPen.classList.remove('active');
-            canvas.style.cursor = 'url("kuromi.png") 16 16, auto';
         });
 
-        // Eventos del Mouse para Dibujar
+        // Obtener coordenadas relativas precisas dentro del canvas
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            // Esto asegura que sin importar el tamaño visual, pinte exacto en los 800x500 del canvas
+            return {
+                x: (e.clientX - rect.left) * (canvas.width / rect.width),
+                y: (e.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
         canvas.addEventListener('mousedown', (e) => {
             isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            lastX = e.clientX - rect.left;
-            lastY = e.clientY - rect.top;
+            const pos = getMousePos(e);
+            lastX = pos.x;
+            lastY = pos.y;
         });
 
         canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const currentX = e.clientX - rect.left;
-            const currentY = e.clientY - rect.top;
+            const pos = getMousePos(e);
 
-            // Enviar posición del cursor a los demás
+            // Transmitir movimiento del cursor en porcentajes (para adaptarlo a cualquier pantalla)
+            const rect = canvas.getBoundingClientRect();
             socket.emit('cursorMove', {
-                xPercent: currentX / canvas.width,
-                yPercent: currentY / canvas.height,
+                xPercent: (e.clientX - rect.left) / rect.width,
+                yPercent: (e.clientY - rect.top) / rect.height,
                 isEraser: (currentTool === 'eraser'),
                 name: userName
             });
@@ -164,30 +165,30 @@
             if (!isDrawing) return;
 
             const color = currentTool === 'eraser' ? '#FFFFFF' : colorPicker.value;
-            const size = currentTool === 'eraser' ? sizePicker.value * 3 : sizePicker.value;
+            const size = currentTool === 'eraser' ? Number(sizePicker.value) * 3 : Number(sizePicker.value);
 
-            // Dibujar localmente al instante
-            drawLine(lastX, lastY, currentX, currentY, color, size);
+            // 1. Dibujar localmente de inmediato
+            drawLine(lastX, lastY, pos.x, pos.y, color, size);
 
-            // Enviar trazo al servidor
+            // 2. Enviar trazo al servidor para que la otra persona lo reciba
             socket.emit('draw', {
                 x0: lastX,
                 y0: lastY,
-                x1: currentX,
-                y1: currentY,
+                x1: pos.x,
+                y1: pos.y,
                 color: color,
                 size: size
             });
 
-            lastX = currentX;
-            lastY = currentY;
+            lastX = pos.x;
+            lastY = pos.y;
         });
 
         window.addEventListener('mouseup', () => {
             isDrawing = false;
         });
 
-        // Función para pintar líneas en el canvas
+        // Función centralizada para dibujar líneas limpias y suaves
         function drawLine(x0, y0, x1, y1, color, size) {
             ctx.beginPath();
             ctx.moveTo(x0, y0);
@@ -200,21 +201,21 @@
             ctx.closePath();
         }
 
-        // --- ESCUCHAR EVENTOS DEL SERVIDOR ---
+        // --- ESCUCHAR AL SERVIDOR ---
 
-        // Recibir historial completo al conectarse por primera vez
+        // Cargar historial anterior al conectarse
         socket.on('initHistory', (history) => {
             history.forEach(data => {
                 drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
             });
         });
 
-        // Recibir trazos en tiempo real de la otra persona
+        // RECIBIR TRAZOS DE OTROS USUARIOS (¡Aquí estaba el fallo de sincronización!)
         socket.on('draw', (data) => {
             drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
         });
 
-        // Limpiar pizarra
+        // Botón limpiar
         btnClear.addEventListener('click', () => {
             socket.emit('clear');
         });
@@ -223,7 +224,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         });
 
-        // Movimiento de cursores de otros usuarios y aparición de Kuromi
+        // Manejo de cursores de otros usuarios y Kuromi exclusiva del borrador
         socket.on('cursorMove', (data) => {
             let cursorEl = document.getElementById(`cursor-${data.id}`);
             if (!cursorEl) {
@@ -234,8 +235,8 @@
             }
 
             const rect = canvas.getBoundingClientRect();
-            cursorEl.style.left = `${rect.left + (data.xPercent * canvas.width)}px`;
-            cursorEl.style.top = `${rect.top + (data.yPercent * canvas.height)}px`;
+            cursorEl.style.left = `${rect.left + (data.xPercent * rect.width)}px`;
+            cursorEl.style.top = `${rect.top + (data.yPercent * rect.height)}px`;
 
             if (data.isEraser) {
                 cursorEl.innerHTML = `
@@ -245,7 +246,7 @@
             } else {
                 cursorEl.innerHTML = `
                     <div class="user-tag">${data.name}</div>
-                    <div style="width: 8px; height: 8px; background: #ff4081; border-radius: 50%;"></div>
+                    <div style="width: 8px; height: 8px; background: #ff4081; border-radius: 50%; box-shadow: 0 0 4px white;"></div>
                 `;
             }
         });
