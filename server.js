@@ -5,73 +5,117 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
-// Servir archivos estáticos desde la carpeta 'public'
+const io = new Server(server, {
+    transports: ['websocket']
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Historial del lienzo compartido (sin límites)
+// Historial
 let drawingHistory = [];
-// Lista de usuarios conectados
-let users = {};
+
+// Usuarios
+const users = {};
 
 io.on('connection', (socket) => {
-    console.log(`Un usuario se ha conectado: ${socket.id}`);
 
-    // Cuando el usuario define su nombre al entrar
+    console.log(`Usuario conectado: ${socket.id}`);
+
+    // =========================
+    // NOMBRE DEL USUARIO
+    // =========================
     socket.on('setName', (name) => {
+
         users[socket.id] = name;
-        
-        // Enviar historial actual al nuevo usuario
+
+        // Enviar historial solamente al usuario nuevo
         socket.emit('initHistory', drawingHistory);
-        
-        // Actualizar lista de usuarios para todos
+
+        // Actualizar usuarios
         io.emit('users', Object.values(users));
     });
 
-    // Recibir lotes de trazos (optimizado para evitar lag a distancia)
+
+    // =========================
+    // DIBUJAR POR LOTES
+    // =========================
     socket.on('drawBatch', (batch) => {
-        batch.forEach(data => {
-            drawingHistory.push(data);
-        });
+
+        if (!Array.isArray(batch) || batch.length === 0) {
+            return;
+        }
+
+        // Guardar historial
+        drawingHistory.push(...batch);
+
+        // Enviar únicamente a los demás
         socket.broadcast.emit('drawBatch', batch);
     });
 
-    // Recibir trazos individuales por compatibilidad
-    socket.on('draw', (data) => {
-        drawingHistory.push(data);
-        socket.broadcast.emit('draw', data);
-        
+
+    // =========================
+    // COMENZÓ A DIBUJAR
+    // =========================
+    socket.on('drawingStart', () => {
+
         if (users[socket.id]) {
-            socket.broadcast.emit('userDrawing', users[socket.id]);
+            socket.broadcast.emit(
+                'userDrawing',
+                users[socket.id]
+            );
         }
     });
 
-    // Recibir uso del balde de relleno
+
+    // =========================
+    // TERMINÓ DE DIBUJAR
+    // =========================
+    socket.on('drawingEnd', () => {
+
+        socket.broadcast.emit('userStoppedDrawing');
+    });
+
+
+    // =========================
+    // RELLENO
+    // =========================
     socket.on('fill', (data) => {
+
         drawingHistory.push(data);
+
         socket.broadcast.emit('fill', data);
-        
-        if (users[socket.id]) {
-            socket.broadcast.emit('userDrawing', users[socket.id]);
-        }
     });
 
-    // Limpiar lienzo
+
+    // =========================
+    // LIMPIAR
+    // =========================
     socket.on('clear', () => {
+
         drawingHistory = [];
+
         io.emit('clear');
     });
 
-    // Desconexión del usuario
+
+    // =========================
+    // DESCONECTAR
+    // =========================
     socket.on('disconnect', () => {
+
         console.log(`Usuario desconectado: ${socket.id}`);
+
         delete users[socket.id];
+
         io.emit('users', Object.values(users));
     });
+
 });
 
+
 const PORT = process.env.PORT || 3000;
+
 server.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT} ❤️`);
 });
