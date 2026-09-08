@@ -370,28 +370,25 @@
         if (event.key === "Enter") enter();
     });
 
- function enter() {
-    const name = nameInput.value.trim();
-    if (!name) {
-        alert("Escribe tu nombre ❤️");
-        return;
-    }
-    
-    if ("Notification" in window && Notification.permission !== "granted") {
-        Notification.requestPermission();
-    }
+    function enter() {
+        const name = nameInput.value.trim();
+        if (!name) {
+            alert("Escribe tu nombre ❤️");
+            return;
+        }
+        
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
 
-    socket.emit("setName", name);
+        socket.emit("setName", name);
+        nameScreen.style.display = "none";
+        app.style.display = "flex";
 
-    // Ocultar pantalla y mostrar app al instante
-    nameScreen.style.display = "none";
-    app.style.display = "flex";
-
-    // Diferir el redibujado para liberar el hilo principal y eliminar el retraso (INP)
-    requestAnimationFrame(() => {
-        setTimeout(redrawAll, 50);
-    });
-}
+        // Diferir el redibujado para liberar el hilo principal y evitar el bloqueo
+        requestAnimationFrame(() => {
+            setTimeout(redrawAll, 50);
+        });
     }
 
     function getPosition(event) {
