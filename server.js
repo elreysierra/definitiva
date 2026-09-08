@@ -1,13 +1,14 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Servir archivos estáticos desde la carpeta actual
-app.use(express.static('public'));
+// Servir archivos estáticos desde la carpeta public
+app.use(express.static(path.join(__dirname, 'public')));
 
 let drawingHistory = [];
 let users = {};
@@ -23,7 +24,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('draw', (data) => {
-        if (drawingHistory.length > 50000) {
+        if (drawingHistory.length > 5000) {
             drawingHistory.shift();
         }
         drawingHistory.push(data);
@@ -31,6 +32,9 @@ io.on('connection', (socket) => {
     });
 
     socket.on('fill', (data) => {
+        if (drawingHistory.length > 5000) {
+            drawingHistory.shift();
+        }
         drawingHistory.push(data);
         socket.broadcast.emit('fill', data);
     });
@@ -40,7 +44,6 @@ io.on('connection', (socket) => {
         io.emit('clear');
     });
 
-    // Recibir movimiento de Kuromi con porcentajes relativos
     socket.on('cursorMove', (data) => {
         socket.broadcast.emit('cursorMove', {
             id: socket.id,
