@@ -345,7 +345,6 @@
     const customColor = document.getElementById("customColor");
     const themeToggle = document.getElementById("themeToggle");
     const kuromiCursor = document.getElementById("kuromiCursor");
-    const remoteKuromi = document.getElementById("remoteKuromi");
 
     let drawing = false;
     let color = "#000000";
@@ -354,6 +353,10 @@
     let lastY = 0;
     let currentTool = "pencil";
     let localHistory = [];
+
+    // Sistema de Batching (Acumulador de red para eliminar lag)
+    let pendingDraws = [];
+    let isBatchScheduled = false;
 
     currentColor.style.background = color;
 
@@ -480,9 +483,7 @@
             const data = { type: "fill", x: pos.x, y: pos.y, color: color };
             
             localHistory.push(data);
-            if (localHistory.length > 5000) {
-                localHistory.shift();
-            }
+            if (localHistory.length > 5000) localHistory.shift();
             socket.emit("fill", data);
         }
     });
@@ -500,7 +501,7 @@
         const clientX = event.clientX;
         const clientY = event.clientY;
 
-        // Mover Kuromi localmente de forma fluida
+        // Mover Kuromi localmente al instante
         if (currentTool === "eraser") {
             const dynamicSize = Math.max(brushSize * 3, 20);
             kuromiCursor.style.left = `${clientX}px`;
@@ -514,7 +515,7 @@
         const strokeColor = (currentTool === "eraser") ? "#ffffff" : color;
         const strokeSize = (currentTool === "eraser") ? Math.max(brushSize * 3, 15) : brushSize;
 
-        // Dibuja de inmediato en cada movimiento para que el trazo sea suave y redondo
+        // 1. Dibuja INMEDIATAMENTE en tu pantalla (Cero lag visual, trazo redondo y suave)
         drawLine(lastX, lastY, pos.x, pos.y, strokeColor, strokeSize);
         
         const drawData = {
@@ -528,10 +529,20 @@
         };
         
         localHistory.push(drawData);
-        if (localHistory.length > 5000) {
-            localHistory.shift();
+        if (localHistory.length > 5000) localHistory.shift();
+
+        // 2. Acumular trazo para enviar por red de forma optimizada (Batching)
+        pendingDraws.push(drawData);
+        if (!isBatchScheduled) {
+            isBatchScheduled = true;
+            requestAnimationFrame(() => {
+                if (pendingDraws.length > 0) {
+                    socket.emit("drawBatch", pendingDraws);
+                    pendingDraws = [];
+                }
+                isBatchScheduled = false;
+            });
         }
-        socket.emit("draw", drawData);
 
         lastX = pos.x;
         lastY = pos.y;
@@ -600,19 +611,25 @@
         ctx.putImageData(imgData, 0, 0);
     }
 
+    // Escuchar eventos de red optimizados en lote (Batch)
+    socket.on("drawBatch", batch => {
+        batch.forEach(data => {
+            localHistory.push(data);
+            if (localHistory.length > 5000) localHistory.shift();
+            drawLine(data.fromX, data.fromY, data.toX, data.toY, data.color, data.size);
+        });
+    });
+
+    // Compatibilidad por si acaso llega un evento individual antiguo
     socket.on("draw", data => {
         localHistory.push(data);
-        if (localHistory.length > 5000) {
-            localHistory.shift();
-        }
+        if (localHistory.length > 5000) localHistory.shift();
         drawLine(data.fromX, data.fromY, data.toX, data.toY, data.color, data.size);
     });
 
     socket.on("fill", data => {
         localHistory.push(data);
-        if (localHistory.length > 5000) {
-            localHistory.shift();
-        }
+        if (localHistory.length > 5000) localHistory.shift();
         floodFill(data.x, data.y, data.color);
     });
 
@@ -641,7 +658,8 @@
             usersDisplay.textContent = `🟢 ${users.join(", ")} están aquí ❤️`;
         }
     });
-</script>
+</script>    
+
 </body>
 
 </html>
