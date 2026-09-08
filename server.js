@@ -24,13 +24,33 @@ io.on('connection', (socket) => {
         updateUserList();
     });
 
-    // Manejo de trazos de dibujo
+    // Manejo de trazos en lote (Batching para eliminar el lag y acelerar la red)
+    socket.on('drawBatch', (batch) => {
+        batch.forEach(data => {
+            if (drawingHistory.length > 5000) {
+                drawingHistory.shift();
+            }
+            drawingHistory.push(data);
+        });
+        socket.broadcast.emit('drawBatch', batch);
+    });
+
+    // Manejo de trazos individuales (por compatibilidad)
     socket.on('draw', (data) => {
         if (drawingHistory.length > 5000) {
             drawingHistory.shift();
         }
         drawingHistory.push(data);
         socket.broadcast.emit('draw', data);
+    });
+
+    // Manejo del bote de pintura (relleno)
+    socket.on('fill', (data) => {
+        if (drawingHistory.length > 5000) {
+            drawingHistory.shift();
+        }
+        drawingHistory.push(data);
+        socket.broadcast.emit('fill', data);
     });
 
     socket.on('clear', () => {
