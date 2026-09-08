@@ -414,7 +414,6 @@
             customColor.value = color;
             if (currentTool === "eraser") {
                 currentTool = "pencil";
-                socket.emit("cursorMove", { visible: false });
             }
             canvas.style.cursor = "crosshair";
             kuromiCursor.style.display = "none";
@@ -426,7 +425,6 @@
         currentColor.style.background = color;
         if (currentTool === "eraser") {
             currentTool = "pencil";
-            socket.emit("cursorMove", { visible: false });
         }
         canvas.style.cursor = "crosshair";
         kuromiCursor.style.display = "none";
@@ -460,21 +458,16 @@
         currentTool = "pencil";
         canvas.style.cursor = "crosshair";
         kuromiCursor.style.display = "none";
-        socket.emit("cursorMove", { visible: false });
     });
 
     document.getElementById("bucket").addEventListener("click", () => {
         currentTool = "bucket";
         canvas.style.cursor = "default";
         kuromiCursor.style.display = "none";
-        socket.emit("cursorMove", { visible: false });
     });
 
     document.addEventListener("mouseleave", () => {
         kuromiCursor.style.display = "none";
-        if (currentTool === "eraser") {
-            socket.emit("cursorMove", { visible: false });
-        }
     });
 
     canvas.addEventListener("pointerenter", () => {
@@ -506,11 +499,11 @@
         lastY = pos.y;
     });
 
-   canvas.addEventListener("pointermove", (event) => {
+    canvas.addEventListener("pointermove", event => {
         const clientX = event.clientX;
         const clientY = event.clientY;
 
-        // Actualizar posición de la goma de borrar (Kuromi) de forma fluida
+        // Mostrar Kuromi de manera local (solo en tu pantalla) sin saturar la red
         if (currentTool === "eraser") {
             const dynamicSize = Math.max(brushSize * 3, 20);
             kuromiCursor.style.left = `${clientX}px`;
@@ -519,21 +512,10 @@
 
         const now = Date.now();
         
-        // Throttling general para el cursor y para el dibujo (evita saturar el celular y la PC)
+        // Throttling de dibujo optimizado
         if (now - lastSendTime > throttleInterval) {
             lastSendTime = now;
 
-            // 1. Enviar movimiento del cursor si es borrador
-            if (currentTool === "eraser") {
-                socket.emit("cursorMove", {
-                    xPercent: clientX / window.innerWidth,
-                    yPercent: clientY / window.innerHeight,
-                    size: Math.max(brushSize * 3, 20),
-                    visible: true
-                });
-            }
-
-            // 2. Si está dibujando, procesar el trazo de forma controlada
             if (drawing && currentTool !== "bucket") {
                 event.preventDefault();
                 const pos = getPosition(event);
@@ -562,7 +544,6 @@
                 lastY = pos.y;
             }
         }
-    });
     });
 
     canvas.addEventListener("pointerup", () => drawing = false);
@@ -642,25 +623,6 @@
             localHistory.shift();
         }
         floodFill(data.x, data.y, data.color);
-    });
-
-    socket.on("cursorMove", (data) => {
-        if (data.visible) {
-            const calculatedX = data.xPercent * window.innerWidth;
-            const calculatedY = data.yPercent * window.innerHeight;
-
-            remoteKuromi.style.display = "block";
-            remoteKuromi.style.left = `${calculatedX}px`;
-            remoteKuromi.style.top = `${calculatedY}px`;
-            remoteKuromi.style.width = `${data.size}px`;
-            remoteKuromi.style.height = `${data.size}px`;
-        } else {
-            remoteKuromi.style.display = "none";
-        }
-    });
-
-    socket.on("removeCursor", () => {
-        remoteKuromi.style.display = "none";
     });
 
     socket.on("initHistory", history => {
