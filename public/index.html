@@ -506,51 +506,63 @@
         lastY = pos.y;
     });
 
-    canvas.addEventListener("pointermove", event => {
+   canvas.addEventListener("pointermove", (event) => {
+        const clientX = event.clientX;
+        const clientY = event.clientY;
+
+        // Actualizar posición de la goma de borrar (Kuromi) de forma fluida
         if (currentTool === "eraser") {
             const dynamicSize = Math.max(brushSize * 3, 20);
-            kuromiCursor.style.left = `${event.clientX}px`;
-            kuromiCursor.style.top = `${event.clientY}px`;
+            kuromiCursor.style.left = `${clientX}px`;
+            kuromiCursor.style.top = `${clientY}px`;
+        }
 
-            const now = Date.now();
-            if (now - lastSendTime > throttleInterval) {
-                lastSendTime = now;
+        const now = Date.now();
+        
+        // Throttling general para el cursor y para el dibujo (evita saturar el celular y la PC)
+        if (now - lastSendTime > throttleInterval) {
+            lastSendTime = now;
+
+            // 1. Enviar movimiento del cursor si es borrador
+            if (currentTool === "eraser") {
                 socket.emit("cursorMove", {
-                    xPercent: event.clientX / window.innerWidth,
-                    yPercent: event.clientY / window.innerHeight,
-                    size: dynamicSize,
+                    xPercent: clientX / window.innerWidth,
+                    yPercent: clientY / window.innerHeight,
+                    size: Math.max(brushSize * 3, 20),
                     visible: true
                 });
             }
+
+            // 2. Si está dibujando, procesar el trazo de forma controlada
+            if (drawing && currentTool !== "bucket") {
+                event.preventDefault();
+                const pos = getPosition(event);
+                const strokeColor = (currentTool === "eraser") ? "#ffffff" : color;
+                const strokeSize = (currentTool === "eraser") ? Math.max(brushSize * 3, 15) : brushSize;
+
+                drawLine(lastX, lastY, pos.x, pos.y, strokeColor, strokeSize);
+                
+                const drawData = {
+                    type: "draw",
+                    fromX: lastX,
+                    fromY: lastY,
+                    toX: pos.x,
+                    toY: pos.y,
+                    color: strokeColor,
+                    size: strokeSize
+                };
+                
+                localHistory.push(drawData);
+                if (localHistory.length > 5000) {
+                    localHistory.shift();
+                }
+                socket.emit("draw", drawData);
+
+                lastX = pos.x;
+                lastY = pos.y;
+            }
         }
-
-        if (!drawing || currentTool === "bucket") return;
-        event.preventDefault();
-        const pos = getPosition(event);
-
-        const strokeColor = (currentTool === "eraser") ? "#ffffff" : color;
-        const strokeSize = (currentTool === "eraser") ? Math.max(brushSize * 3, 15) : brushSize;
-
-        drawLine(lastX, lastY, pos.x, pos.y, strokeColor, strokeSize);
-        
-        const drawData = {
-            type: "draw",
-            fromX: lastX,
-            fromY: lastY,
-            toX: pos.x,
-            toY: pos.y,
-            color: strokeColor,
-            size: strokeSize
-        };
-        
-        localHistory.push(drawData);
-        if (localHistory.length > 5000) {
-            localHistory.shift();
-        }
-        socket.emit("draw", drawData);
-
-        lastX = pos.x;
-        lastY = pos.y;
+    });
     });
 
     canvas.addEventListener("pointerup", () => drawing = false);
