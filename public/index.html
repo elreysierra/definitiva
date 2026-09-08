@@ -62,7 +62,6 @@
             display: block;
             cursor: crosshair;
         }
-        /* Estilo para los cursores flotantes de otros usuarios y Kuromi */
         .remote-cursor {
             position: absolute;
             pointer-events: none;
@@ -103,7 +102,7 @@
     <!-- Cargar Socket.io -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io(); // Se conecta automáticamente al servidor actual (Render o Local)
+        const socket = io();
 
         const canvas = document.getElementById('whiteboard');
         const ctx = canvas.getContext('2d');
@@ -112,7 +111,6 @@
         const btnPen = document.getElementById('btnPen');
         const btnEraser = document.getElementById('btnEraser');
         const btnClear = document.getElementById('btnClear');
-        const canvasContainer = document.getElementById('canvasContainer');
 
         // Ajustar tamaño del canvas
         canvas.width = 800;
@@ -121,7 +119,7 @@
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
-        let currentTool = 'pen'; // 'pen' o 'eraser'
+        let currentTool = 'pen';
 
         // Pedir nombre de usuario al entrar
         let userName = prompt("¿Cómo te llamas?") || "Anónimo";
@@ -139,7 +137,7 @@
             currentTool = 'eraser';
             btnEraser.classList.add('active');
             btnPen.classList.remove('active');
-            canvas.style.cursor = 'url("kuromi.png") 16 16, auto'; // Muestra a Kuromi como cursor propio si está en la carpeta public
+            canvas.style.cursor = 'url("kuromi.png") 16 16, auto';
         });
 
         // Eventos del Mouse para Dibujar
@@ -155,7 +153,7 @@
             const currentX = e.clientX - rect.left;
             const currentY = e.clientY - rect.top;
 
-            // Enviar posición del cursor a los demás (con indicador si usa borrador)
+            // Enviar posición del cursor a los demás
             socket.emit('cursorMove', {
                 xPercent: currentX / canvas.width,
                 yPercent: currentY / canvas.height,
@@ -166,12 +164,12 @@
             if (!isDrawing) return;
 
             const color = currentTool === 'eraser' ? '#FFFFFF' : colorPicker.value;
-            const size = currentTool === 'eraser' ? brushSize.value * 3 : sizePicker.value;
+            const size = currentTool === 'eraser' ? sizePicker.value * 3 : sizePicker.value;
 
             // Dibujar localmente al instante
             drawLine(lastX, lastY, currentX, currentY, color, size);
 
-            // Enviar trazo al servidor para que aparezca rápido en los demás
+            // Enviar trazo al servidor
             socket.emit('draw', {
                 x0: lastX,
                 y0: lastY,
@@ -204,15 +202,14 @@
 
         // --- ESCUCHAR EVENTOS DEL SERVIDOR ---
 
-        // Recibir historial al conectarse
-        socket.emit('initHistory', []);
+        // Recibir historial completo al conectarse por primera vez
         socket.on('initHistory', (history) => {
             history.forEach(data => {
                 drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
             });
         });
 
-        // Recibir trazos de otros usuarios en tiempo real
+        // Recibir trazos en tiempo real de la otra persona
         socket.on('draw', (data) => {
             drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
         });
@@ -240,7 +237,6 @@
             cursorEl.style.left = `${rect.left + (data.xPercent * canvas.width)}px`;
             cursorEl.style.top = `${rect.top + (data.yPercent * canvas.height)}px`;
 
-            // Si el otro usuario usa el borrador, se muestra la imagen de Kuromi. Si no, un puntito rojo con su nombre.
             if (data.isEraser) {
                 cursorEl.innerHTML = `
                     <div class="user-tag">${data.name} (Borrador)</div>
@@ -254,7 +250,6 @@
             }
         });
 
-        // Eliminar cursor cuando alguien se desconecta
         socket.on('removeCursor', (id) => {
             const cursorEl = document.getElementById(`cursor-${id}`);
             if (cursorEl) cursorEl.remove();
