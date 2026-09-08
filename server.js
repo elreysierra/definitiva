@@ -7,7 +7,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // Servir archivos estáticos desde la carpeta actual
-app.use(express.static(__dirname));
+app.use(express.static('public'));
 
 let drawingHistory = [];
 let users = {};
