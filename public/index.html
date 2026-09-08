@@ -330,7 +330,6 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-
 <script>
     const socket = io();
     const canvas = document.getElementById("canvas");
@@ -471,25 +470,6 @@
         socket.emit("cursorMove", { visible: false });
     });
 
-    window.addEventListener("pointermove", (event) => {
-        if (currentTool === "eraser") {
-            const dynamicSize = Math.max(brushSize * 3, 20);
-            kuromiCursor.style.left = `${event.clientX}px`;
-            kuromiCursor.style.top = `${event.clientY}px`;
-
-            const now = Date.now();
-            if (now - lastSendTime > throttleInterval) {
-                lastSendTime = now;
-                socket.emit("cursorMove", {
-                    xPercent: event.clientX / window.innerWidth,
-                    yPercent: event.clientY / window.innerHeight,
-                    size: dynamicSize,
-                    visible: true
-                });
-            }
-        }
-    });
-
     document.addEventListener("mouseleave", () => {
         kuromiCursor.style.display = "none";
         if (currentTool === "eraser") {
@@ -527,6 +507,23 @@
     });
 
     canvas.addEventListener("pointermove", event => {
+        if (currentTool === "eraser") {
+            const dynamicSize = Math.max(brushSize * 3, 20);
+            kuromiCursor.style.left = `${event.clientX}px`;
+            kuromiCursor.style.top = `${event.clientY}px`;
+
+            const now = Date.now();
+            if (now - lastSendTime > throttleInterval) {
+                lastSendTime = now;
+                socket.emit("cursorMove", {
+                    xPercent: event.clientX / window.innerWidth,
+                    yPercent: event.clientY / window.innerHeight,
+                    size: dynamicSize,
+                    visible: true
+                });
+            }
+        }
+
         if (!drawing || currentTool === "bucket") return;
         event.preventDefault();
         const pos = getPosition(event);
