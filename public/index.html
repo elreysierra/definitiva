@@ -288,27 +288,21 @@
     <div id="users">🟢 Conectando...</div>
 
     <div class="toolbar">
-    <span>🎨 Paleta:</span>
+    <span>🎨 Color:</span>
     <input type="color" id="customColor" value="#000000" title="Elegir color">
+    
     <span>Actual:</span>
     <div id="currentColor" style="width: 25px; height: 25px; border-radius: 50%; display: inline-block; border: 1px solid #ccc;"></div>
+
+    <span>🖌️ Tamaño:</span>
+    <input type="range" id="size" min="1" max="40" value="5">
+    <span id="sizeValue">5</span>
+
+    <button class="tool-button" id="pencil">✏️ Lápiz</button>
+    <button class="tool-button" id="eraser">🖤 Kuromi Borrador</button>
+    <button class="tool-button" id="bucket">🪣 Balde</button>
+    <button class="tool-button" id="themeToggle" title="Cambiar tema">🌙</button>
 </div>
-        <span>Más:</span>
-        <input type="color" id="customColor" class="color-picker" value="#000000" title="Elegir otro color">
-
-        <span>Actual:</span>
-        <div id="currentColor"></div>
-
-        <span>🖌️ Tamaño:</span>
-        <input type="range" id="size" min="1" max="40" value="5">
-        <span id="sizeValue">5</span>
-
-        <button class="tool-button" id="pencil">✏️ Lápiz</button>
-        <button class="tool-button" id="eraser">🖤 Kuromi Borrador</button>
-        <button class="tool-button" id="bucket">🪣 Balde</button>
-        <button class="tool-button" id="themeToggle" title="Cambiar tema">🌙</button>
-    </div>
-
     <canvas id="canvas" width="1000" height="600"></canvas>
 
     <button id="clear">🗑️ Limpiar lienzo</button>
