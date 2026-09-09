@@ -332,7 +332,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io({
-    transports: ['websocket'] // Forzamos WebSockets puros
+    transports: ['polling', 'websocket']
 });
 
 const canvas = document.getElementById("canvas");
