@@ -55,7 +55,6 @@ io.on('connection', (socket) => {
 
     console.log(`🟢 Usuario conectado: ${socket.id}`);
 
-
     // =====================================
     // EL USUARIO PONE SU NOMBRE
     // =====================================
@@ -72,7 +71,7 @@ io.on('connection', (socket) => {
         // Mandar historial al usuario que acaba de entrar
         socket.emit('initHistory', drawingHistory);
 
-        // Actualizar lista de usuarios
+        // Actualizar lista de usuarios a TODOS inmediatamente
         io.emit('users', Object.values(users));
 
         console.log(`👤 ${cleanName} se ha unido`);
@@ -183,7 +182,7 @@ io.on('connection', (socket) => {
 
         delete users[socket.id];
 
-        // Actualizar usuarios
+        // Actualizar usuarios a TODOS los que sigan en la sala
         io.emit('users', Object.values(users));
 
         if (name) {
