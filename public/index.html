@@ -288,26 +288,11 @@
     <div id="users">🟢 Conectando...</div>
 
     <div class="toolbar">
-        <span>🎨 Paleta:</span>
-        <div class="color-palette">
-            <button class="color" style="background:#000000" data-color="#000000" title="Negro"></button>
-            <button class="color" style="background:#6c757d" data-color="#6c757d" title="Gris"></button>
-            <button class="color" style="background:#ffffff" data-color="#ffffff" title="Blanco"></button>
-            <button class="color" style="background:#e63946" data-color="#e63946" title="Rojo"></button>
-            <button class="color" style="background:#ff69b4" data-color="#ff69b4" title="Rosado"></button>
-            <button class="color" style="background:#ffb6c1" data-color="#ffb6c1" title="Rosado Pastel"></button>
-            <button class="color" style="background:#ff7b00" data-color="#ff7b00" title="Naranja"></button>
-            <button class="color" style="background:#ffd700" data-color="#ffd700" title="Amarillo"></button>
-            <button class="color" style="background:#ffea00" data-color="#ffea00" title="Amarillo Claro"></button>
-            <button class="color" style="background:#00a651" data-color="#00a651" title="Verde"></button>
-            <button class="color" style="background:#2ec4b6" data-color="#2ec4b6" title="Turquesa"></button>
-            <button class="color" style="background:#00b4d8" data-color="#00b4d8" title="Celeste"></button>
-            <button class="color" style="background:#0066ff" data-color="#0066ff" title="Azul"></button>
-            <button class="color" style="background:#8000ff" data-color="#8000ff" title="Púrpura"></button>
-            <button class="color" style="background:#f72585" data-color="#f72585" title="Magenta"></button>
-            <button class="color" style="background:#7f4f24" data-color="#7f4f24" title="Marrón"></button>
-        </div>
-
+    <span>🎨 Paleta:</span>
+    <input type="color" id="customColor" value="#000000" title="Elegir color">
+    <span>Actual:</span>
+    <div id="currentColor" style="width: 25px; height: 25px; border-radius: 50%; display: inline-block; border: 1px solid #ccc;"></div>
+</div>
         <span>Más:</span>
         <input type="color" id="customColor" class="color-picker" value="#000000" title="Elegir otro color">
 
