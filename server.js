@@ -98,7 +98,7 @@ io.on('connection', (socket) => {
             );
         }
 
-        // Mandar el lote a todos MENOS al que lo envió (el cliente ya lo pinta localmente al instante)
+        // Mandar el lote a todos MENOS al que lo envió
         socket.broadcast.emit('drawBatch', batch);
     });
 
@@ -129,8 +129,8 @@ io.on('connection', (socket) => {
     // LIMPIAR LIENZO
     // =====================================
     socket.on('clear', () => {
-        drawingHistory = [];
-        io.emit('clear');
+        drawingHistory = []; // Vaciamos el historial por completo
+        io.emit('clear');    // Avisamos a todos que limpien la pantalla
         console.log('🧹 Lienzo limpiado');
     });
 
