@@ -530,15 +530,8 @@ canvas.addEventListener("pointermove", event => {
     
     localHistory.push(drawData);
 
-    pendingDraws.push(drawData);
-    if (!isBatchScheduled) {
-        isBatchScheduled = true;
-        requestAnimationFrame(() => {
-            if (pendingDraws.length > 0) {
-                socket.emit("drawBatch", pendingDraws);
-                pendingDraws = [];
-            }
-            isBatchScheduled = false;
+// Envía el trazo de inmediato para cero retardo en el otro teléfono
+    socket.emit("drawBatch", [drawData]);
         });
     }
 
