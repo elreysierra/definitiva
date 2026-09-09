@@ -338,9 +338,6 @@ let lastY = 0;
 let currentTool = "pencil";
 let localHistory = [];
 
-let pendingDraws = [];
-let isBatchScheduled = false;
-
 currentColor.style.background = color;
 
 // ==========================================
@@ -357,7 +354,6 @@ function resizeCanvas() {
     
     ctx.scale(dpr, dpr);
     
-    // Reaplicamos estilos suaves y redibujamos la historia para que no se borre nada al redimensionar
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     redrawAll();
@@ -392,7 +388,6 @@ function enter() {
     nameScreen.style.display = "none";
     app.style.display = "flex";
 
-    // Forzamos un redimensionado y redibujado limpio al entrar a la sala
     requestAnimationFrame(() => {
         resizeCanvas();
         setTimeout(redrawAll, 50);
@@ -530,10 +525,8 @@ canvas.addEventListener("pointermove", event => {
     
     localHistory.push(drawData);
 
-// Envía el trazo de inmediato para cero retardo en el otro teléfono
+    // Envía el trazo de inmediato para cero retardo en el otro teléfono
     socket.emit("drawBatch", [drawData]);
-        });
-    }
 
     lastX = pos.x;
     lastY = pos.y;
