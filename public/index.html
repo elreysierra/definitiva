@@ -331,7 +331,9 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    const socket = io();
+const socket = io({
+    transports: ['websocket'] // Forzamos WebSockets puros
+});
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     const nameScreen = document.getElementById("nameScreen");
