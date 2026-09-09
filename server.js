@@ -38,7 +38,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Evita que la memoria crezca para siempre
 const MAX_HISTORY = 50000;
-
 let drawingHistory = [];
 
 
@@ -59,13 +58,11 @@ io.on('connection', (socket) => {
     // EL USUARIO PONE SU NOMBRE
     // =====================================
     socket.on('setName', (name) => {
-
         if (!name || typeof name !== 'string') {
             return;
         }
 
         const cleanName = name.trim().substring(0, 30);
-
         users[socket.id] = cleanName;
 
         // Mandar historial al usuario que acaba de entrar
@@ -79,16 +76,13 @@ io.on('connection', (socket) => {
 
 
     // =====================================
-    // DIBUJO POR LOTES
+    // DIBUJO POR LOTES / TRAZOS
     // =====================================
     socket.on('drawBatch', (batch) => {
-
-        // Comprobar que sea un array
         if (!Array.isArray(batch)) {
             return;
         }
 
-        // Evitar batches gigantes
         if (batch.length === 0 || batch.length > 1000) {
             return;
         }
@@ -104,32 +98,8 @@ io.on('connection', (socket) => {
             );
         }
 
-        // Mandar el lote a todos MENOS al que lo envió
+        // Mandar el lote a todos MENOS al que lo envió (el cliente ya lo pinta localmente al instante)
         socket.broadcast.emit('drawBatch', batch);
-    });
-
-
-    // =====================================
-    // EMPEZÓ A DIBUJAR
-    // =====================================
-    socket.on('drawingStart', () => {
-
-        const name = users[socket.id];
-
-        if (!name) {
-            return;
-        }
-
-        socket.broadcast.emit('userDrawing', name);
-    });
-
-
-    // =====================================
-    // DEJÓ DE DIBUJAR
-    // =====================================
-    socket.on('drawingEnd', () => {
-
-        socket.broadcast.emit('userStoppedDrawing');
     });
 
 
@@ -137,7 +107,6 @@ io.on('connection', (socket) => {
     // RELLENO / BALDE
     // =====================================
     socket.on('fill', (data) => {
-
         if (!data || typeof data !== 'object') {
             return;
         }
@@ -160,11 +129,8 @@ io.on('connection', (socket) => {
     // LIMPIAR LIENZO
     // =====================================
     socket.on('clear', () => {
-
         drawingHistory = [];
-
         io.emit('clear');
-
         console.log('🧹 Lienzo limpiado');
     });
 
@@ -173,12 +139,9 @@ io.on('connection', (socket) => {
     // DESCONECTAR
     // =====================================
     socket.on('disconnect', (reason) => {
-
         const name = users[socket.id];
 
-        console.log(
-            `🔴 Usuario desconectado: ${socket.id} (${reason})`
-        );
+        console.log(`🔴 Usuario desconectado: ${socket.id} (${reason})`);
 
         delete users[socket.id];
 
@@ -199,7 +162,6 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-
     console.log('');
     console.log('================================');
     console.log('❤️ SERVIDOR DE DIBUJO ACTIVO');
