@@ -334,19 +334,42 @@
 const socket = io({
     transports: ['websocket'] // Forzamos WebSockets puros
 });
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    const nameScreen = document.getElementById("nameScreen");
-    const app = document.getElementById("app");
-    const nameInput = document.getElementById("nameInput");
-    const enterButton = document.getElementById("enterButton");
-    const usersDisplay = document.getElementById("users");
-    const sizeInput = document.getElementById("size");
-    const sizeValue = document.getElementById("sizeValue");
-    const currentColor = document.getElementById("currentColor");
-    const customColor = document.getElementById("customColor");
-    const themeToggle = document.getElementById("themeToggle");
-    const kuromiCursor = document.getElementById("kuromiCursor");
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+// ==========================================
+// AJUSTE DE ALTA DEFINICIÓN (Evita que se vea borroso)
+// ==========================================
+function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    
+    ctx.scale(dpr, dpr);
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ==========================================
+// ESTILOS DE TRAZO SUAVE (Líneas y esquinas redondas)
+// ==========================================
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+
+const nameScreen = document.getElementById("nameScreen");
+const app = document.getElementById("app");
+const nameInput = document.getElementById("nameInput");
+const enterButton = document.getElementById("enterButton");
+const usersDisplay = document.getElementById("users");
+const sizeInput = document.getElementById("size");
+const sizeValue = document.getElementById("sizeValue");
+const currentColor = document.getElementById("currentColor");
+const customColor = document.getElementById("customColor");
+const themeToggle = document.getElementById("themeToggle");
+const kuromiCursor = document.getElementById("kuromiCursor");
 
     let drawing = false;
     let color = "#000000";
