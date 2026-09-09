@@ -6,116 +6,205 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 
+// ===============================
+// SOCKET.IO
+// ===============================
 const io = new Server(server, {
-    transports: ['websocket']
+    transports: ['polling', 'websocket'],
+
+    // Evita problemas si el cliente está en otro origen
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    },
+
+    // Permite enviar lotes relativamente grandes
+    maxHttpBufferSize: 1e6,
+
+    // Tiempo de espera de conexión
+    pingTimeout: 20000,
+    pingInterval: 25000
 });
 
+// ===============================
+// ARCHIVOS DE LA PÁGINA
+// ===============================
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Historial
+
+// ===============================
+// HISTORIAL DEL DIBUJO
+// ===============================
+
+// Evita que la memoria crezca para siempre
+const MAX_HISTORY = 50000;
+
 let drawingHistory = [];
 
-// Usuarios
+
+// ===============================
+// USUARIOS
+// ===============================
 const users = {};
 
+
+// ===============================
+// CONEXIONES
+// ===============================
 io.on('connection', (socket) => {
 
-    console.log(`Usuario conectado: ${socket.id}`);
+    console.log(`🟢 Usuario conectado: ${socket.id}`);
 
-    // =========================
-    // NOMBRE DEL USUARIO
-    // =========================
+
+    // =====================================
+    // EL USUARIO PONE SU NOMBRE
+    // =====================================
     socket.on('setName', (name) => {
 
-        users[socket.id] = name;
-
-        // Enviar historial solamente al usuario nuevo
-        socket.emit('initHistory', drawingHistory);
-
-        // Actualizar usuarios
-        io.emit('users', Object.values(users));
-    });
-
-
-    // =========================
-    // DIBUJAR POR LOTES
-    // =========================
-    socket.on('drawBatch', (batch) => {
-
-        if (!Array.isArray(batch) || batch.length === 0) {
+        if (!name || typeof name !== 'string') {
             return;
         }
 
-        // Guardar historial
+        const cleanName = name.trim().substring(0, 30);
+
+        users[socket.id] = cleanName;
+
+        // Mandar historial al usuario que acaba de entrar
+        socket.emit('initHistory', drawingHistory);
+
+        // Actualizar lista de usuarios
+        io.emit('users', Object.values(users));
+
+        console.log(`👤 ${cleanName} se ha unido`);
+    });
+
+
+    // =====================================
+    // DIBUJO POR LOTES
+    // =====================================
+    socket.on('drawBatch', (batch) => {
+
+        // Comprobar que sea un array
+        if (!Array.isArray(batch)) {
+            return;
+        }
+
+        // Evitar batches gigantes
+        if (batch.length === 0 || batch.length > 1000) {
+            return;
+        }
+
+        // Guardar en historial
         drawingHistory.push(...batch);
 
-        // Enviar únicamente a los demás
+        // Limitar historial
+        if (drawingHistory.length > MAX_HISTORY) {
+            drawingHistory.splice(
+                0,
+                drawingHistory.length - MAX_HISTORY
+            );
+        }
+
+        // Mandar el lote a todos MENOS al que lo envió
         socket.broadcast.emit('drawBatch', batch);
     });
 
 
-    // =========================
-    // COMENZÓ A DIBUJAR
-    // =========================
+    // =====================================
+    // EMPEZÓ A DIBUJAR
+    // =====================================
     socket.on('drawingStart', () => {
 
-        if (users[socket.id]) {
-            socket.broadcast.emit(
-                'userDrawing',
-                users[socket.id]
-            );
+        const name = users[socket.id];
+
+        if (!name) {
+            return;
         }
+
+        socket.broadcast.emit('userDrawing', name);
     });
 
 
-    // =========================
-    // TERMINÓ DE DIBUJAR
-    // =========================
+    // =====================================
+    // DEJÓ DE DIBUJAR
+    // =====================================
     socket.on('drawingEnd', () => {
 
         socket.broadcast.emit('userStoppedDrawing');
     });
 
 
-    // =========================
-    // RELLENO
-    // =========================
+    // =====================================
+    // RELLENO / BALDE
+    // =====================================
     socket.on('fill', (data) => {
 
+        if (!data || typeof data !== 'object') {
+            return;
+        }
+
         drawingHistory.push(data);
+
+        // Limitar historial
+        if (drawingHistory.length > MAX_HISTORY) {
+            drawingHistory.splice(
+                0,
+                drawingHistory.length - MAX_HISTORY
+            );
+        }
 
         socket.broadcast.emit('fill', data);
     });
 
 
-    // =========================
-    // LIMPIAR
-    // =========================
+    // =====================================
+    // LIMPIAR LIENZO
+    // =====================================
     socket.on('clear', () => {
 
         drawingHistory = [];
 
         io.emit('clear');
+
+        console.log('🧹 Lienzo limpiado');
     });
 
 
-    // =========================
+    // =====================================
     // DESCONECTAR
-    // =========================
-    socket.on('disconnect', () => {
+    // =====================================
+    socket.on('disconnect', (reason) => {
 
-        console.log(`Usuario desconectado: ${socket.id}`);
+        const name = users[socket.id];
+
+        console.log(
+            `🔴 Usuario desconectado: ${socket.id} (${reason})`
+        );
 
         delete users[socket.id];
 
+        // Actualizar usuarios
         io.emit('users', Object.values(users));
+
+        if (name) {
+            console.log(`👋 ${name} salió de la sala`);
+        }
     });
 
 });
 
 
+// ===============================
+// SERVIDOR
+// ===============================
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT} ❤️`);
+
+    console.log('');
+    console.log('================================');
+    console.log('❤️ SERVIDOR DE DIBUJO ACTIVO');
+    console.log(`🌐 Puerto: ${PORT}`);
+    console.log('================================');
+    console.log('');
 });
