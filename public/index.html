@@ -307,25 +307,19 @@
     <div id="users">🟢 Conectando...</div>
 
 <div class="toolbar">
-    <span>🎨 Color:</span>
+    <span>🎨</span>
     <input type="color" id="customColor" value="#000000" title="Elegir color">
-    
-    <span>Actual:</span>
-    <div id="currentColor" style="width: 25px; height: 25px; border-radius: 50%; display: inline-block; border: 1px solid #ccc;"></div>
+    <div id="currentColor"></div>
 
-    <span>🖌️ Tamaño:</span>
+    <span>🖌️</span>
     <input type="range" id="size" min="1" max="40" value="5">
     <span id="sizeValue">5</span>
 
-    <button id="pencil">✏️ Lápiz</button>
-    <button id="eraser">🖤 Kuromi Borrador</button>
-    <button id="bucket">🪣 Balde</button>
-    <button id="themeToggle">☀️</button>
-    <button id="clear">🗑️ Limpiar</button>
+    <button id="pencil" class="tool-button">✏️ Lápiz</button>
+    <button id="eraser" class="tool-button">🖤 Borrador</button>
+    <button id="bucket" class="tool-button">🪣 Balde</button>
+    <button id="themeToggle" class="tool-button">☀️</button>
 </div>
-    <canvas id="canvas" width="1000" height="600"></canvas>
-
-    <button id="clear">🗑️ Limpiar lienzo</button>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
